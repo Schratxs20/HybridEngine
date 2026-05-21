@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hybrid Engine — Class Feedback</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --black: #0a0a0a; --white: #f5f2ec; --mid: #1a1a1a; --border: #2a2a2a; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--black); color: var(--white); font-family: 'Barlow', sans-serif; font-weight: 300; min-height: 100vh; overflow-x: hidden; }
+
+  .header { padding: 60px 40px 40px; border-bottom: 1px solid var(--border); position: relative; overflow: hidden; }
+  .header::before { content: 'HE'; position: absolute; right: -20px; top: -40px; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 280px; color: #111; letter-spacing: -10px; pointer-events: none; user-select: none; line-height: 1; }
+  .header-tag { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; color: #666; margin-bottom: 20px; }
+  .header h1 { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: clamp(52px, 10vw, 96px); line-height: 0.9; text-transform: uppercase; letter-spacing: -2px; position: relative; z-index: 1; }
+  .header h1 span { display: block; color: var(--white); }
+  .header h1 span.outline { -webkit-text-stroke: 1.5px var(--white); color: transparent; }
+  .header-sub { margin-top: 24px; font-size: 14px; color: #888; font-weight: 300; max-width: 400px; line-height: 1.6; position: relative; z-index: 1; }
+
+  .form-wrap { max-width: 720px; margin: 0 auto; padding: 60px 40px 100px; }
+
+  .q-block { margin-bottom: 56px; opacity: 0; transform: translateY(20px); animation: fadeUp 0.5s forwards; }
+  .q-block:nth-child(1) { animation-delay: 0.1s; }
+  .q-block:nth-child(2) { animation-delay: 0.2s; }
+  .q-block:nth-child(3) { animation-delay: 0.3s; }
+  .q-block:nth-child(4) { animation-delay: 0.4s; }
+  .q-block:nth-child(5) { animation-delay: 0.5s; }
+  .q-block:nth-child(6) { animation-delay: 0.6s; }
+  .q-block:nth-child(7) { animation-delay: 0.7s; }
+  .q-block:nth-child(8) { animation-delay: 0.8s; }
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+  .q-num { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 3px; color: #444; text-transform: uppercase; margin-bottom: 10px; }
+  .q-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--white); margin-bottom: 20px; line-height: 1.2; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .options.row { flex-direction: row; flex-wrap: wrap; gap: 10px; }
+
+  .option-label { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s ease; position: relative; overflow: hidden; }
+  .option-label::before { content: ''; position: absolute; inset: 0; background: var(--white); transform: scaleX(0); transform-origin: left; transition: transform 0.2s ease; z-index: 0; }
+  .option-label:hover::before, .option-label:has(input:checked)::before { transform: scaleX(1); }
+  .option-label:hover, .option-label:has(input:checked) { color: var(--black); border-color: var(--white); }
+  .option-label input { display: none; }
+  .option-text { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 15px; letter-spacing: 1px; text-transform: uppercase; position: relative; z-index: 1; }
+  .option-dot { width: 8px; height: 8px; border: 1px solid #444; flex-shrink: 0; position: relative; z-index: 1; transition: background 0.15s, border-color 0.15s; }
+  .option-label:has(input:checked) .option-dot, .option-label:hover .option-dot { background: var(--black); border-color: var(--black); }
+
+  .star-row { display: flex; gap: 8px; }
+  .star-btn { background: none; border: 1px solid var(--border); color: var(--white); width: 52px; height: 52px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 13px; letter-spacing: 1px; }
+  .star-btn:hover, .star-btn.active { background: var(--white); color: var(--black); border-color: var(--white); }
+
+  textarea { width: 100%; background: transparent; border: 1px solid var(--border); color: var(--white); font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 300; padding: 18px; resize: vertical; min-height: 120px; outline: none; transition: border-color 0.2s; line-height: 1.6; }
+  textarea::placeholder { color: #444; }
+  textarea:focus { border-color: var(--white); }
+
+  .divider { height: 1px; background: var(--border); margin: 0 0 56px; }
+
+  .submit-wrap { padding-top: 20px; }
+  .submit-btn { background: var(--white); color: var(--black); border: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px; letter-spacing: 3px; text-transform: uppercase; padding: 20px 60px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+  .submit-btn::after { content: ''; position: absolute; inset: 0; background: var(--black); transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease; z-index: 0; }
+  .submit-btn:hover::after { transform: scaleX(1); }
+  .submit-btn:hover { color: var(--white); outline: 1px solid var(--white); }
+  .submit-btn span { position: relative; z-index: 1; }
+  .anon-note { margin-top: 16px; font-size: 12px; color: #444; letter-spacing: 1px; text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif; }
+
+  .footer { border-top: 1px solid var(--border); padding: 24px 40px; display: flex; justify-content: space-between; align-items: center; }
+  .footer-brand { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: #333; }
+  .footer-note { font-size: 11px; color: #333; letter-spacing: 1px; text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif; }
+
+  @media (max-width: 600px) {
+    .header { padding: 40px 24px 32px; }
+    .form-wrap { padding: 40px 24px 80px; }
+    .footer { padding: 20px 24px; flex-direction: column; gap: 8px; }
+    .header::before { font-size: 180px; }
+    .star-btn { width: 44px; height: 44px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-tag">Saturday 11AM — CrossFit Fullmotion, Syosset</div>
+  <h1>
+    <span>Hybrid</span>
+    <span class="outline">Engine</span>
+  </h1>
+  <p class="header-sub">Anonymous. Honest. 2 minutes. Help us build something better.</p>
+</div>
+
+<div class="form-wrap">
+  <form action="https://formspree.io/f/xykveoeo" method="POST">
+
+    <!-- Q1 -->
+    <div class="q-block">
+      <div class="q-num">01</div>
+      <div class="q-label">How long have you been attending?</div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="How long attending" value="First time"><span class="option-dot"></span><span class="option-text">First time</span></label>
+        <label class="option-label"><input type="radio" name="How long attending" value="1-2 times"><span class="option-dot"></span><span class="option-text">1–2 times</span></label>
+        <label class="option-label"><input type="radio" name="How long attending" value="3-4 times"><span class="option-dot"></span><span class="option-text">3–4 times</span></label>
+        <label class="option-label"><input type="radio" name="How long attending" value="5+ times - been here since the start"><span class="option-dot"></span><span class="option-text">5+ times — been here since the start</span></label>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Q2 -->
+    <div class="q-block">
+      <div class="q-num">02</div>
+      <div class="q-label">Overall class rating</div>
+      <div class="star-row" id="starRow">
+        <button class="star-btn" type="button" data-val="1">1</button>
+        <button class="star-btn" type="button" data-val="2">2</button>
+        <button class="star-btn" type="button" data-val="3">3</button>
+        <button class="star-btn" type="button" data-val="4">4</button>
+        <button class="star-btn" type="button" data-val="5">5</button>
+      </div>
+      <input type="hidden" id="ratingVal" name="Overall rating" value="">
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Q3 -->
+    <div class="q-block">
+      <div class="q-num">03</div>
+      <div class="q-label">What's working? Keep doing this.</div>
+      <textarea name="What is working well" placeholder="Be specific — we want to hear it."></textarea>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Q4 -->
+    <div class="q-block">
+      <div class="q-num">04</div>
+      <div class="q-label">What do you want more of?</div>
+      <textarea name="Want more of" placeholder="More of this please..."></textarea>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Q5 -->
+    <div class="q-block">
+      <div class="q-num">05</div>
+      <div class="q-label">What do you want less of?</div>
+      <textarea name="Want less of" placeholder="Be honest. We can take it."></textarea>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Q6 -->
+    <div class="q-block">
+      <div class="q-num">06</div>
+      <div class="q-label">How do you feel after a typical class?</div>
+      <div class="options">
+        <label class="option-label"><input type="radio" name="How you feel after class" value="Destroyed in a good way"><span class="option-dot"></span><span class="option-text">Destroyed — in a good way</span></label>
+        <label class="option-label"><input type="radio" name="How you feel after class" value="Energized"><span class="option-dot"></span><span class="option-text">Energized</span></label>
+        <label class="option-label"><input type="radio" name="How you feel after class" value="Challenged but good"><span class="option-dot"></span><span class="option-text">Challenged but good</span></label>
+        <label class="option-label"><input type="radio" name="How you feel after class" value="Undertrained"><span class="option-dot"></span><span class="option-text">Undertrained</span></label>
+        <label class="option-label"><input type="radio" name="How you feel after class" value="Overtrained"><span class="option-dot"></span><span class="option-text">Overtrained</span></label>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Q7 -->
+    <div class="q-block">
+      <div class="q-num">07</div>
+      <div class="q-label">How did you hear about us?</div>
+      <div class="options row">
+        <label class="option-label"><input type="radio" name="How heard about us" value="Friend"><span class="option-dot"></span><span class="option-text">Friend</span></label>
+        <label class="option-label"><input type="radio" name="How heard about us" value="Social media"><span class="option-dot"></span><span class="option-text">Social media</span></label>
+        <label class="option-label"><input type="radio" name="How heard about us" value="CrossFit Fullmotion"><span class="option-dot"></span><span class="option-text">CrossFit Fullmotion</span></label>
+        <label class="option-label"><input type="radio" name="How heard about us" value="HYROX"><span class="option-dot"></span><span class="option-text">HYROX</span></label>
+        <label class="option-label"><input type="radio" name="How heard about us" value="Other"><span class="option-dot"></span><span class="option-text">Other</span></label>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Q8 -->
+    <div class="q-block">
+      <div class="q-num">08</div>
+      <div class="q-label">Anything else you want us to know? <span style="color:#444;font-size:14px;font-weight:400;">(optional)</span></div>
+      <textarea name="Anything else" placeholder="Open floor. Say whatever."></textarea>
+    </div>
+
+    <!-- SUBMIT -->
+    <div class="submit-wrap">
+      <button type="submit" class="submit-btn"><span>Submit Feedback</span></button>
+      <div class="anon-note">🔒 100% anonymous — no name or email collected</div>
+    </div>
+
+  </form>
+</div>
+
+<div class="footer">
+  <div class="footer-brand">Hybrid Engine</div>
+  <div class="footer-note">CrossFit Fullmotion — Syosset, NY</div>
+</div>
+
+<script>
+  const stars = document.querySelectorAll('.star-btn');
+  const ratingVal = document.getElementById('ratingVal');
+  stars.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const val = parseInt(btn.dataset.val);
+      ratingVal.value = val;
+      stars.forEach((s, i) => s.classList.toggle('active', i < val));
+    });
+  });
+</script>
+
+</body>
+</html>
