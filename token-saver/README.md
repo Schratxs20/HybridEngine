@@ -2,7 +2,7 @@
 
 Local prep steps that shrink what Claude has to read. Both scripts are plain `python3`, plus
 `ffmpeg` where needed, and run the same way on a Mac or in a cloud session. Copies live in the
-Made-from-effort repo under `scripts/`, and the journal scheduled tasks call them.
+Made-from-effort repo under `scripts/` (pending your OK in that session). New fresh-session journal tasks that use them exist but stay disabled until tested; the old tasks keep running meanwhile.
 
 Install: nothing is needed in the cloud (python3 and ffmpeg are already there). Cloud network can't
 reach YouTube, so there `transcript_prep.py` reads the Apify transcript JSON that the routine already
