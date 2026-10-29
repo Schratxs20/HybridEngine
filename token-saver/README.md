@@ -1,13 +1,17 @@
 # token-saver
 
 Local prep steps that shrink what Claude has to read. Both scripts are plain `python3`, plus
-`ffmpeg` where needed, and run the same way on a Mac or in a cloud session. Nothing is installed
-or scheduled yet.
+`ffmpeg` where needed, and run the same way on a Mac or in a cloud session. Copies live in the
+Made-from-effort repo under `scripts/`, and the journal scheduled tasks call them.
+
+Install: nothing is needed in the cloud (python3 and ffmpeg are already there). Cloud network can't
+reach YouTube, so there `transcript_prep.py` reads the Apify transcript JSON that the routine already
+fetches. On a Mac, for URLs and audio: `brew install yt-dlp whisper-cpp ffmpeg`.
 
 | Script | Replaces | Output Claude reads |
 |---|---|---|
-| `session_brief.py <repo>` | waking a 300k–700k-token session so it can "remember" the journal state | `BRIEF.md`, about 150–300 words |
-| `transcript_prep.py <url\|media\|vtt\|json>` | reading a full podcast transcript, or long slices of it | `prep/<slug>/summary.md`, one page. Full text goes to `transcript.tsv` for grep. Add `--sheet` to also get `contact.jpg`, a 4×3 frame grid (video only) |
+| `session_brief.py <repo>` | waking a 300k–700k-token session so it can "remember" the journal state | `/tmp/BRIEF.md`, about 150–300 words |
+| `transcript_prep.py <url\|media\|vtt\|json>` | reading a full podcast transcript, or long slices of it | `/tmp/transcript-prep/<slug>/summary.md`, one page (kept outside the repo). Full text goes to `transcript.tsv` for grep. Add `--sheet` to also get `contact.jpg`, a 4×3 frame grid (video only) |
 
 ## Before/after (estimates from the Oct 2026 session audit)
 

@@ -2,10 +2,11 @@
 """Turn a long podcast/video transcript into a one-page brief Claude reads instead.
 
 Input (first match wins):
-  - a .vtt/.srt/.txt/.json transcript (Apify dataset JSON with "timestamped" works)
+  - a .vtt/.srt/.txt/.json transcript, incl. an Apify get-dataset-items result saved to tool-results/
+    (cloud sessions: this is the path to use, their network cannot reach YouTube directly)
   - a YouTube URL       -> yt-dlp auto-captions (no Whisper needed when captions exist)
   - an audio/video file -> whisper.cpp (`whisper-cli`) or openai-whisper (`whisper`)
-Output in --out (default ./prep/<slug>/):
+Output in --out (default /tmp/transcript-prep/<slug>/, outside the repo on purpose):
   summary.md      one page: sections with timestamps, key lines, keywords
   transcript.tsv  full text, "seconds<TAB>line" — grep it, never Read it whole
   contact.jpg     optional, video only: one 4x3 frame grid (--sheet)
@@ -30,18 +31,19 @@ def read_captions(path):
     raw = open(path, encoding="utf-8", errors="replace").read()
     if path.endswith(".json"):
         d = json.loads(raw)
-        items = d.get("items", d) if isinstance(d, dict) else d
-        rows = items[0].get("timestamped") or items[0].get("transcript") if isinstance(items, list) else None
+        item = (d.get("items") or [d])[0] if isinstance(d, dict) else d[0]
+        rows = next((item[k] for k in ("timestamped", "transcript", "captions", "segments", "text", "raw") if item.get(k)), None)
         if isinstance(rows, list):
             out = []
             for r in rows:
                 if isinstance(r, dict):
                     t = r.get("start", r.get("offset", r.get("time", 0)))
-                    out.append((parse_time(str(t)) if ":" in str(t) else float(t), r.get("text", "")))
-                else:
-                    out.append((float(r[0]), str(r[1])))
+                    out.append((parse_time(str(t)) if ":" in str(t) else float(t or 0), r.get("text", "")))
+                elif isinstance(r, (list, tuple)):
+                    t = str(r[0]); out.append((parse_time(t) if ":" in t else float(t), str(r[1])))
             return out
-        return [(0, str(rows or raw))]
+        text = re.sub(r"<[^>]+>", " ", str(rows or ""))
+        return [(0, s) for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
     out, t, seen = [], 0.0, set()
     for line in raw.splitlines():
         m = re.match(r"\s*(\d[\d:.,]*)\s*-->", line)
@@ -133,11 +135,15 @@ def main():
     cap, media = fetch(a.source, work)
     rows = read_captions(cap)
     sents = sentences(rows)
+    if sents and all(t == 0 for t, _ in sents):      # untimed text: estimate at ~150 spoken words/min
+        n, est = 0, []
+        for _, x in sents: est.append((n * 0.4, x)); n += len(x.split())
+        sents, rows = est, est
     dur = rows[-1][0] if rows else 0
     section = a.section_min * 60 or max(120, dur / 10)        # ~10 sections keeps it to one page
     secs, kw = summarize(sents, section, a.per_section)
     slug = re.sub(r"[^a-z0-9]+", "-", (a.title or os.path.basename(a.source)).lower()).strip("-")[:50] or "transcript"
-    out = a.out or os.path.join("prep", slug); os.makedirs(out, exist_ok=True)
+    out = a.out or os.path.join(tempfile.gettempdir(), "transcript-prep", slug); os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "transcript.tsv"), "w") as f:
         for t, s in sents: f.write(f"{int(t)}\t{s}\n")
     nwords = sum(len(s.split()) for _, s in sents)

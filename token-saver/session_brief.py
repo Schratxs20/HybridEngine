@@ -5,11 +5,11 @@ instead of waking a long-lived one and reloading 300k-700k tokens of old convers
 Reads the repo, not the chat history:
   posts/*.md, posts/banked/*.md   front matter: title, date, issue, excerpt
   BRIEF_NOTES.md (optional)       standing rules you've told the routine ("don't flag other sessions' commits")
-Writes BRIEF.md (default) — the routine's prompt says "read BRIEF.md first; don't read posts/ unless needed".
+Writes /tmp/BRIEF.md (default, kept out of the repo) — the routine's prompt says "read BRIEF.md first; don't read posts/ unless needed".
 
   python3 session_brief.py /path/to/Made-from-effort [--recent 12] [--out BRIEF.md]
 """
-import argparse, datetime as dt, glob, os, re, subprocess
+import argparse, datetime as dt, glob, os, re, subprocess, tempfile
 
 def front(path):
     m = re.match(r"---\n(.*?)\n---", open(path, encoding="utf-8").read(), re.S)
@@ -43,7 +43,7 @@ def main():
          "", "## Banked drafts", *([f"- #{d.get('issue','?')} {d.get('title')} — `{os.path.relpath(d['file'], a.repo)}`" for d in bank] or ["- (none)"])]
     notes = os.path.join(a.repo, "BRIEF_NOTES.md")
     if os.path.exists(notes): L += ["", "## Standing notes", open(notes).read().strip()]
-    out = a.out or os.path.join(a.repo, "BRIEF.md")
+    out = a.out or os.path.join(tempfile.gettempdir(), "BRIEF.md")
     open(out, "w").write("\n".join(L) + "\n")
     print(f"{out}  ({len(' '.join(L).split())} words)")
 
